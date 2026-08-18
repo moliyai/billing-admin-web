@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}MoliyAI — Invoices{% endblock %}
+{% block breadcrumb %}Monthly Invoices{% endblock %}
+
+{% block content %}
+<!-- Overview Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Total Invoiced</span>
+        <p class="text-xl font-bold tracking-tight text-zinc-900 mt-1">${{ total_billed|floatformat:2 }}</p>
+    </div>
+    <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Total Collected</span>
+        <p class="text-xl font-bold tracking-tight text-emerald-600 mt-1">${{ total_paid|floatformat:2 }}</p>
+    </div>
+    <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <span class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Pending Collection</span>
+        <p class="text-xl font-bold tracking-tight text-amber-600 mt-1">${{ total_unpaid|floatformat:2 }}</p>
+    </div>
+</div>
+
+<!-- Control Bar -->
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
+    <form method="get" class="flex flex-wrap items-center gap-3">
+        <input
+            type="text"
+            name="q"
+            value="{{ query }}"
+            placeholder="Search company or invoice..."
+            class="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-900 shadow-sm focus:border-zinc-900 focus:outline-none"
+        >
+        <select name="company" class="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-700 shadow-sm focus:border-zinc-900 focus:outline-none">
+            <option value="">All Companies</option>
+            {% for comp in companies %}
+                <option value="{{ comp.id }}" {% if company_filter == comp.id|stringformat:"s" %}selected{% endif %}>{{ comp.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="status" class="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-700 shadow-sm focus:border-zinc-900 focus:outline-none">
+            <option value="">All Statuses</option>
+            {% for key, label in status_choices %}
+                <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800">Filter</button>
+        {% if query or status_filter or company_filter %}
+            <a href="{% url 'invoices' %}" class="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition">Clear</a>
+        {% endif %}
+    </form>
+
+    <button onclick="toggleModal('generate-invoice-modal')" class="inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Generate New Invoice
+    </button>
+</div>
+
+<!-- Table -->
+<div class="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-zinc-600 whitespace-nowrap">
+            <thead class="bg-zinc-50 border-b border-zinc-200 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                <tr>
+                    <th class="px-6 py-3">Invoice Name</th>
+                    <th class="px-6 py-3">Company</th>
+                    <th class="px-6 py-3">Billing Month</th>
+                    <th class="px-6 py-3">API Requests</th>
+                    <th class="px-6 py-3">Total Amount</th>
+                    <th class="px-6 py-3">Status</th>
+                    <th class="px-6 py-3 text-right">Update Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-100">
+                {% for invoice in invoices %}
+                <tr class="hover:bg-zinc-50/80 transition">
+                    <td class="px-6 py-4 font-semibold text-zinc-900">{{ invoice.name }}</td>
+                    <td class="px-6 py-4 font-medium text-zinc-800">{{ invoice.company.name }}</td>
+                    <td class="px-6 py-4 font-mono text-xs text-zinc-500">{{ invoice.formatted_invoice_month }}</td>
+                    <td class="px-6 py-4 text-xs font-medium text-zinc-700">{{ invoice.total_requests }}</td>
+                    <td class="px-6 py-4 font-bold text-zinc-900">${{ invoice.total_amount }}</td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold
+                            {% if invoice.status == 'PAID' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                            {% elif invoice.status == 'GENERATED' %}bg-amber-50 text-amber-700 border border-amber-200
+                            {% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
+                            {{ invoice.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <form method="post" action="{% url 'update_invoice_status' invoice.id %}" class="inline-flex items-center gap-1">
+                            {% csrf_token %}
+                            <select name="status" onchange="this.form.submit()" class="text-xs border border-zinc-200 rounded px-2 py-1 bg-zinc-50 focus:outline-none cursor-pointer">
+                                {% for key, label in status_choices %}
+                                    <option value="{{ key }}" {% if invoice.status == key %}selected{% endif %}>Set {{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="px-6 py-8 text-center text-xs text-zinc-400">No invoices found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Generate Invoice Modal -->
+<div id="generate-invoice-modal" class="fixed inset-0 bg-zinc-900/50 z-50 flex items-center justify-center p-4 hidden" style="margin-top: 0px !important;">
+    <div class="bg-white rounded-xl border border-zinc-200 shadow-xl max-w-md w-full p-6 space-y-4">
+        <div class="flex justify-between items-center border-b pb-3 border-zinc-100">
+            <h3 class="text-sm font-semibold text-zinc-900">Generate Invoice for Period</h3>
+            <button onclick="toggleModal('generate-invoice-modal')" class="text-zinc-400 hover:text-zinc-600">&times;</button>
+        </div>
+
+        <form method="post" action="{% url 'generate_invoice' %}" class="space-y-3">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Company</label>
+                <select name="company_id" required class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+                    {% for company in companies %}
+                    <option value="{{ company.id }}">{{ company.name }} ({{ company.pocket.name }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Styled Month & Year Picker Component -->
+            <div>
+                <label for="invoice_month_input" class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+                    Billing Period (Month & Year)
+                </label>
+                <div class="relative">
+                    <input
+                        type="month"
+                        id="invoice_month_input"
+                        name="invoice_month"
+                        required
+                        value="{% now 'm-Y' %}"
+                        class="w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 py-2 text-xs font-mono text-zinc-900 shadow-sm focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900 [color-scheme:light] cursor-pointer"
+                    >
+                    <svg class="w-4 h-4 text-zinc-400 absolute left-2.5 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-end gap-2">
+                <button type="button" onclick="toggleModal('generate-invoice-modal')" class="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 rounded-lg">Cancel</button>
+                <button type="submit" class="px-4 py-1.5 text-xs font-semibold text-white bg-zinc-900 rounded-lg hover:bg-zinc-800">Calculate & Generate</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

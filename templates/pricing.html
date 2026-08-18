@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}MoliyAI — Pricing Tiers{% endblock %}
+{% block breadcrumb %}Pricing Tiers Matrix{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-sm font-semibold text-zinc-900">Available Plans (Pockets)</h2>
+    <button onclick="toggleModal('add-pocket-modal')" class="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Add Pricing Tier
+    </button>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for pocket in pockets %}
+    <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm flex flex-col justify-between hover:border-zinc-300 transition">
+        <div>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-zinc-900">{{ pocket.name }}</h3>
+                <span class="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-700 border border-zinc-200">
+                    {{ pocket.companies_count }} Customer(s)
+                </span>
+            </div>
+
+            <div class="mb-6">
+                <span class="text-3xl font-extrabold tracking-tight text-zinc-900">${{ pocket.price }}</span>
+                <span class="text-xs text-zinc-500 font-medium">/ month</span>
+            </div>
+
+            <div class="space-y-3 pt-4 border-t border-zinc-100 text-xs text-zinc-600 mb-6">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span><strong>{{ pocket.requests_count }}</strong> Requests included per month</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span><strong>${{ pocket.price_per_request_over_limit }}</strong> Overage rate per request</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-4 border-t border-zinc-100 text-[11px] text-zinc-400">
+            Updated {{ pocket.updated_at|date:"M d, Y" }}
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full rounded-xl border border-zinc-200 bg-white p-8 text-center text-xs text-zinc-400">
+        No pricing pockets configured yet.
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Add Pocket Modal -->
+<div id="add-pocket-modal" class="fixed inset-0 bg-zinc-900/50 z-50 flex items-center justify-center p-4 hidden" style="margin-top: 0px !important;">
+    <div class="bg-white rounded-xl border border-zinc-200 shadow-xl max-w-md w-full p-6 space-y-4">
+        <div class="flex justify-between items-center border-b pb-3 border-zinc-100">
+            <h3 class="text-sm font-semibold text-zinc-900">Add Pricing Pocket</h3>
+            <button onclick="toggleModal('add-pocket-modal')" class="text-zinc-400 hover:text-zinc-600">&times;</button>
+        </div>
+
+        <form method="post" action="{% url 'create_pocket' %}" class="space-y-3">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Plan Name</label>
+                <input type="text" name="name" required placeholder="e.g. Enterprise Tier" class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Included Requests Count</label>
+                <input type="number" name="requests_count" value="10000" class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Base Price ($)</label>
+                <input type="number" step="0.01" name="price" value="99.00" class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Price Per Request Over Limit ($)</label>
+                <input type="number" step="0.001" name="price_per_request_over_limit" value="0.01" class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+            </div>
+
+            <div class="pt-2 flex justify-end gap-2">
+                <button type="button" onclick="toggleModal('add-pocket-modal')" class="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 rounded-lg">Cancel</button>
+                <button type="submit" class="px-4 py-1.5 text-xs font-semibold text-white bg-zinc-900 rounded-lg hover:bg-zinc-800">Save Pocket</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

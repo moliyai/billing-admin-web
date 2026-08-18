@@ -1,0 +1,4 @@
+- Dashboard
+- Customers & Plans
+- Invoices
+- Pricig

@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}MoliyAI — Customers & Profiles{% endblock %}
+{% block breadcrumb %}Customers & Company User Profiles{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+    <form method="get" class="relative w-full sm:w-80">
+        <input
+            type="text"
+            name="q"
+            value="{{ query }}"
+            placeholder="Search company or plan..."
+            class="block w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 py-2 text-xs text-zinc-900 shadow-sm focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+        >
+        <svg class="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    </form>
+
+    <div class="flex items-center gap-2 whitespace-nowrap">
+        <button onclick="toggleModal('add-company-modal')" class="inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Company
+        </button>
+        <button onclick="toggleModal('add-profile-modal')" class="inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-800 shadow-sm hover:bg-zinc-50 transition">
+            <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add User Profile
+        </button>
+    </div>
+</div>
+
+<!-- Companies List -->
+<div class="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
+    <div class="px-5 py-3 border-b border-zinc-100 bg-zinc-50/50">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Registered Companies</h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-zinc-600 whitespace-nowrap">
+            <thead class="bg-zinc-50 border-b border-zinc-200 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                <tr>
+                    <th class="px-6 py-3">Company Name</th>
+                    <th class="px-6 py-3">Assigned Plan</th>
+                    <th class="px-6 py-3">API Endpoint</th>
+                    <th class="px-6 py-3">Linked Profiles</th>
+                    <th class="px-6 py-3 text-right">Created</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-100">
+                {% for company in companies %}
+                <tr class="hover:bg-zinc-50/80 transition">
+                    <td class="px-6 py-4 font-semibold text-zinc-900">{{ company.name }}</td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200/80">
+                            {{ company.pocket.name }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 font-mono text-xs text-zinc-500">{{ company.api_url|default:"Standard Gateway" }}</td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded bg-zinc-100 text-xs text-zinc-700 font-medium">
+                            {{ company.profile_count }} User(s)
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-right text-xs text-zinc-400">{{ company.created_at|date:"M d, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="px-6 py-8 text-center text-xs text-zinc-400">No companies found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Linked User Profiles List -->
+<div class="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden mt-6">
+    <div class="px-5 py-3 border-b border-zinc-100 bg-zinc-50/50">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Company User Accounts (Profiles)</h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-zinc-600 whitespace-nowrap">
+            <thead class="bg-zinc-50 border-b border-zinc-200 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                <tr>
+                    <th class="px-6 py-3">Username</th>
+                    <th class="px-6 py-3">Email</th>
+                    <th class="px-6 py-3">Company</th>
+                    <th class="px-6 py-3 text-right">Created</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-100">
+                {% for profile in profiles %}
+                <tr class="hover:bg-zinc-50/80 transition">
+                    <td class="px-6 py-3 font-semibold text-zinc-900">{{ profile.user.username }}</td>
+                    <td class="px-6 py-3 text-xs text-zinc-500">{{ profile.user.email|default:"N/A" }}</td>
+                    <td class="px-6 py-3 font-medium text-zinc-800">{{ profile.company.name }}</td>
+                    <td class="px-6 py-3 text-right text-xs text-zinc-400">{{ profile.created_at|date:"M d, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="px-6 py-6 text-center text-xs text-zinc-400">No user profiles created yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Company Modal -->
+<div id="add-company-modal" class="fixed inset-0 bg-zinc-900/50 z-50 flex items-center justify-center p-4 hidden" style="margin-top: 0px !important;">
+    <div class="bg-white rounded-xl border border-zinc-200 shadow-xl max-w-md w-full p-6 space-y-4">
+        <div class="flex justify-between items-center border-b pb-3 border-zinc-100">
+            <h3 class="text-sm font-semibold text-zinc-900">Add New Company</h3>
+            <button onclick="toggleModal('add-company-modal')" class="text-zinc-400 hover:text-zinc-600">&times;</button>
+        </div>
+
+        <form method="post" action="{% url 'create_company' %}" class="space-y-3">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Company Name</label>
+                <input type="text" name="name" required placeholder="e.g. Corp" class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Assigned Pricing Tier (Pocket)</label>
+                <select name="pocket_id" required class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+                    {% for pocket in pockets %}
+                    <option value="{{ pocket.id }}">{{ pocket.name }} (${{ pocket.price }}/mo)</option>
+                    {% empty %}
+                    <option value="">No pricing pockets available</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">API Endpoint URL (Optional)</label>
+                <input type="url" name="api_url" placeholder="https://api.corp.com" class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">API Username</label>
+                    <input type="text" name="api_username" class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">API Password</label>
+                    <input type="password" name="api_password" class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-end gap-2">
+                <button type="button" onclick="toggleModal('add-company-modal')" class="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 rounded-lg">Cancel</button>
+                <button type="submit" class="px-4 py-1.5 text-xs font-semibold text-white bg-zinc-900 rounded-lg hover:bg-zinc-800">Save Company</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Profile Modal -->
+<div id="add-profile-modal" class="fixed inset-0 bg-zinc-900/50 z-50 flex items-center justify-center p-4 hidden" style="margin-top: 0px !important;">
+    <div class="bg-white rounded-xl border border-zinc-200 shadow-xl max-w-md w-full p-6 space-y-4">
+        <div class="flex justify-between items-center border-b pb-3 border-zinc-100">
+            <h3 class="text-sm font-semibold text-zinc-900">Add New User Profile</h3>
+            <button onclick="toggleModal('add-profile-modal')" class="text-zinc-400 hover:text-zinc-600">&times;</button>
+        </div>
+
+        <form method="post" action="{% url 'create_profile' %}" class="space-y-3">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Company</label>
+                <select name="company_id" required class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+                    {% for company in companies %}
+                    <option value="{{ company.id }}">{{ company.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Username</label>
+                <input type="text" name="username" required class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Email</label>
+                <input type="email" name="email" class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Password</label>
+                <input type="password" name="password" required class="w-full rounded-lg border border-zinc-200 p-2 text-xs text-zinc-900 focus:outline-none focus:border-zinc-900">
+            </div>
+
+            <div class="pt-2 flex justify-end gap-2">
+                <button type="button" onclick="toggleModal('add-profile-modal')" class="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 rounded-lg">Cancel</button>
+                <button type="submit" class="px-4 py-1.5 text-xs font-semibold text-white bg-zinc-900 rounded-lg hover:bg-zinc-800">Create Profile</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
